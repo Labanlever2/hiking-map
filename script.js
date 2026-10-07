@@ -140,9 +140,6 @@ L.control.zoom({position: 'topleft'}).addTo(map);
 // Add scale
 L.control.scale().addTo(map);
 
-// Prevent map tiles from being dragged outside bounds
-map.setMaxBounds(map.getBounds());
-
 // Add geolocation button
 const geoButton = document.createElement('button');
 geoButton.innerHTML = '📍 My Location';
@@ -207,5 +204,5 @@ const observer = new MutationObserver(() => {
 observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
 console.log('🗺️ Hiking Map loaded successfully!');
-console.log('📍 Default location: New York. Zoom and pan to your desired area.');
+console.log('📍 Default location: New York. Freely zoom and pan anywhere!');
 console.log('Free tiles: © Esri, © OpenStreetMap, © OpenTopoMap, © Waymarked Trails');
