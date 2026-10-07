@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hiking Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <style>
         * {
             margin: 0;
@@ -43,8 +42,10 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             z-index: 1000;
-            min-width: 240px;
+            min-width: 260px;
             transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         body.dark-mode .control-panel {
@@ -78,13 +79,6 @@
 
         body.dark-mode .control-group label:hover {
             background-color: rgba(255,255,255,0.1);
-        }
-
-        .control-group input[type="checkbox"] {
-            margin-right: 10px;
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
         }
 
         .control-group input[type="radio"] {
@@ -148,6 +142,75 @@
             border-color: #4CAF50;
         }
 
+        .action-button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border: 2px solid #4CAF50;
+            background: white;
+            color: #4CAF50;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .action-button:hover {
+            background: #4CAF50;
+            color: white;
+        }
+
+        body.dark-mode .action-button {
+            background: #2a2a2a;
+            color: #4CAF50;
+        }
+
+        body.dark-mode .action-button:hover {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .location-info {
+            background: rgba(0,0,0,0.05);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 8px;
+            word-break: break-all;
+        }
+
+        body.dark-mode .location-info {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .marker-status {
+            font-size: 12px;
+            padding: 8px;
+            margin-top: 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .marker-active {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        body.dark-mode .marker-active {
+            background: rgba(76, 175, 80, 0.2);
+            color: #81c784;
+        }
+
+        .marker-inactive {
+            background: rgba(0,0,0,0.05);
+            color: #666;
+        }
+
+        body.dark-mode .marker-inactive {
+            background: rgba(255,255,255,0.1);
+            color: #aaa;
+        }
+
         .info-text {
             font-size: 12px;
             color: #666;
@@ -191,26 +254,12 @@
             gap: 8px;
         }
 
-        .legend-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 3px;
-        }
-
-        .trail-red {
-            background-color: #ff4444;
-        }
-
-        .trail-blue {
-            background-color: #4477ff;
-        }
-
-        .trail-green {
-            background-color: #44aa44;
-        }
-
-        .trail-yellow {
-            background-color: #ffbb00;
+        .legend-icon {
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            font-size: 14px;
         }
 
         .attribution {
@@ -230,7 +279,7 @@
             .control-panel {
                 top: 10px;
                 right: 10px;
-                min-width: 200px;
+                min-width: 220px;
                 padding: 15px;
             }
 
@@ -249,7 +298,7 @@
         <h3>🗺️ Map Controls</h3>
         
         <div class="map-type-section">
-            <p>Satellite Map</p>
+            <p>Map Type</p>
             <div class="control-group">
                 <label>
                     <input type="radio" name="mapType" value="satellite" checked>
@@ -273,13 +322,19 @@
         <div class="divider"></div>
 
         <div class="map-type-section">
-            <p>Trail Layers</p>
-            <div class="control-group">
-                <label>
-                    <input type="checkbox" id="trailOverlay" checked>
-                    Show Trails
-                </label>
-            </div>
+            <p>Meetup Spot (Start Location)</p>
+            <button class="action-button" id="setMeetup">📍 Set Meetup Spot</button>
+            <div class="marker-status marker-inactive" id="meetupStatus">Not set</div>
+            <div class="location-info" id="meetupCoords" style="display: none;"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="map-type-section">
+            <p>Base Camp (Camping Location)</p>
+            <button class="action-button" id="setBaseCamp">⛺ Set Base Camp</button>
+            <div class="marker-status marker-inactive" id="basecampStatus">Not set</div>
+            <div class="location-info" id="basecampCoords" style="display: none;"></div>
         </div>
 
         <div class="divider"></div>
@@ -295,22 +350,18 @@
     </div>
 
     <div class="legend">
-        <h4>Trail Types</h4>
+        <h4>Markers</h4>
         <div class="legend-item">
-            <div class="legend-color trail-red"></div>
-            <span>Difficult</span>
+            <div class="legend-icon">📍</div>
+            <span>Meetup Spot</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color trail-blue"></div>
-            <span>Intermediate</span>
+            <div class="legend-icon">⛺</div>
+            <span>Base Camp</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color trail-green"></div>
-            <span>Easy</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color trail-yellow"></div>
-            <span>Scenic</span>
+            <div class="legend-icon">📌</div>
+            <span>Your Location</span>
         </div>
         <div class="attribution">
             Maps © OpenStreetMap<br>
